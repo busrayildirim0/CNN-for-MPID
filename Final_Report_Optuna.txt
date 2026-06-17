@@ -1,0 +1,52 @@
+============================================================
+ MICROBOONE MPID REPORT
+============================================================
+
+--- DATASET ---
+Total Events : 98237
+Train Set    : 68763
+Validation   : 14738
+Test Set     : 14736
+
+--- BEST HYPERPARAMETERS ---
+Conv Blocks  : 4
+Dropout      : 0.4
+Learning Rate: 0.000194
+Batch Size   : 32
+Optimizer    : Adam
+
+--- PERFORMANCE ---
+Subset Accuracy : %69.81
+Element-wise Accuracy : %93.67
+Hamming Loss    : 0.0633
+Micro F1 Score  : 0.9613
+Macro F1 Score  : 0.9200
+
+--- INFERENCE ---
+Inference Time per Sample: 3.38 ms
+Model Size: 1.70 MB
+
+--- CONFUSION MATRICES ---
+
+SINIF           | TP         | TN         | FP         | FN        
+----------------------------------------------------------------------
+Elektron (e-)   | 14730      | 0          | 6          | 0         
+Foton (γ)       | 14463      | 101        | 86         | 86        
+Muon (μ-)       | 13842      | 678        | 88         | 128       
+Piyon (π)       | 3166       | 8132       | 1406       | 2032      
+Proton (p)      | 11711      | 2195       | 670        | 160       
+
+--- CLASSIFICATION REPORT ---
+
+               precision    recall  f1-score   support
+
+Elektron (e-)       1.00      1.00      1.00     14730
+    Foton (γ)       0.99      0.99      0.99     14549
+    Muon (μ-)       0.99      0.99      0.99     13970
+    Piyon (π)       0.69      0.61      0.65      5198
+   Proton (p)       0.95      0.99      0.97     11871
+
+    micro avg       0.96      0.96      0.96     60318
+    macro avg       0.93      0.92      0.92     60318
+ weighted avg       0.96      0.96      0.96     60318
+  samples avg       0.96      0.96      0.96     60318

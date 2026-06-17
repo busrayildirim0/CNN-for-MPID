@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LArTPC Simulation & CNN MPID Dashboard</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- Header & Navigation -->
+  <header>
+    <div class="nav-container">
+      <div class="logo">
+        LArTPC <span>MPID Dashboard</span>
+      </div>
+      <ul class="nav-links">
+        <li><a href="#hero">Intro</a></li>
+        <li><a href="#simulation">Detector Simulation</a></li>
+        <li><a href="#results">CNN Training Results</a></li>
+        <li><a href="#literature">Literature & Code</a></li>
+      </ul>
+    </div>
+  </header>
+
+  <main>
+    <!-- Hero Section -->
+    <section id="hero" class="hero-section">
+      <div class="badge">Geant4 + PyTorch Deep Learning</div>
+      <h1>LArTPC Detector Simulation &<br><span class="gradient-title">Multiple Particle Identification (MPID) CNN</span></h1>
+      <p>
+        This dashboard presents a physical Geant4 simulation of a MicroBooNE-like Liquid Argon Time Projection Chamber (LArTPC) and the results of a multi-label Convolutional Neural Network (CNN) optimized via Optuna Bayesian search.
+      </p>
+    </section>
+
+    <!-- Simulation Section -->
+    <section id="simulation">
+      <h2 class="section-title">LArTPC Detector Simulation</h2>
+      <p style="color: var(--text-muted); margin-bottom: 2rem; max-width: 1000px;">
+        Liquid Argon Time Projection Chambers (LArTPC) detect particles when ionization electrons created along their paths drift under an electric field to **anode wire planes (U, V, Y)**. The induced signals form 2D wire-vs-time images. Below, you can interactively simulate particle tracks, charge drift, and see real-time 2D readouts.
+      </p>
+
+      <div class="sim-container">
+        <!-- 3D Viewer Card -->
+        <div class="glass-card sim-visualizer">
+          <div id="three-canvas-container" class="three-canvas-container">
+            <!-- Three.js will inject canvas here -->
+          </div>
+          
+          <!-- Detector Stats Overlay -->
+          <div class="sim-stats-overlay">
+            <h4>LArTPC Active Volume</h4>
+            <div class="sim-stats-row">
+              <span>Width (X)</span>
+              <span>256.35 cm</span>
+            </div>
+            <div class="sim-stats-row">
+              <span>Height (Y)</span>
+              <span>233.00 cm</span>
+            </div>
+            <div class="sim-stats-row">
+              <span>Length (Z)</span>
+              <span>1036.80 cm</span>
+            </div>
+            <div class="sim-stats-row">
+              <span>Temperature</span>
+              <span>87 K (-186 °C)</span>
+            </div>
+            <div class="sim-stats-row">
+              <span>Working Medium</span>
+              <span>Liquid Argon</span>
+            </div>
+          </div>
+
+          <!-- Overlay Controls -->
+          <div class="sim-overlay-controls">
+            <div class="btn-icon-group">
+              <button class="sim-btn-icon" id="btn-zoom-in" title="Zoom In">+</button>
+              <button class="sim-btn-icon" id="btn-zoom-out" title="Zoom Out">-</button>
+              <button class="sim-btn-icon" id="btn-reset-camera" title="Reset Camera">⟲</button>
+            </div>
+            <div class="btn-icon-group">
+              <button class="sim-btn-icon" id="btn-toggle-grid" title="Toggle Grid">田</button>
+              <button class="sim-btn-icon" id="btn-toggle-cryo" title="Toggle Cryostat">⚿</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Simulation Controls Sidebar -->
+        <div class="glass-card sim-controls-sidebar">
+          <div>
+            <h3 class="control-group-title">Particle Selection</h3>
+            <div class="particle-selector">
+              <div class="particle-option selected" data-particle="electron" style="--particle-color: var(--color-electron); --particle-color-rgb: 8, 145, 178;">
+                <div class="particle-color-indicator"></div>
+                <div class="particle-name">Electron</div>
+                <div class="particle-symbol">e⁻</div>
+              </div>
+              <div class="particle-option" data-particle="photon" style="--particle-color: var(--color-photon); --particle-color-rgb: 147, 51, 234;">
+                <div class="particle-color-indicator"></div>
+                <div class="particle-name">Photon</div>
+                <div class="particle-symbol">γ</div>
+              </div>
+              <div class="particle-option" data-particle="muon" style="--particle-color: var(--color-muon); --particle-color-rgb: 5, 150, 105;">
+                <div class="particle-color-indicator"></div>
+                <div class="particle-name">Muon</div>
+                <div class="particle-symbol">μ⁻</div>
+              </div>
+              <div class="particle-option" data-particle="pion" style="--particle-color: var(--color-pion); --particle-color-rgb: 217, 119, 6;">
+                <div class="particle-color-indicator"></div>
+                <div class="particle-name">Pion</div>
+                <div class="particle-symbol">π⁺/π⁻</div>
+              </div>
+              <div class="particle-option" data-particle="proton" style="--particle-color: var(--color-proton); --particle-color-rgb: 225, 29, 72;">
+                <div class="particle-color-indicator"></div>
+                <div class="particle-name">Proton</div>
+                <div class="particle-symbol">p</div>
+              </div>
+            </div>
+          </div>
+
+          <div style="margin-top: 1rem;">
+            <button class="btn-primary" id="btn-simulate">
+              <span class="glow-text-cyan">✦</span> Simulate Event
+            </button>
+          </div>
+
+          <div style="margin-top: 1.5rem; flex: 1; border-top: 1px solid var(--border-color); padding-top: 1rem;">
+            <h4 style="font-size: 0.95rem; margin-bottom: 0.5rem; color: var(--accent-cyan);">Simulation Logs</h4>
+            <div id="simulation-log" style="font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; color: var(--text-muted); line-height: 1.4; max-height: 120px; overflow-y: auto;">
+              Detector ready. Choose a particle type and click "Simulate Event".
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2D Projections (U, V, Y Readouts) -->
+      <div class="readouts-panel" style="margin-top: 2rem;">
+        <!-- U-View -->
+        <div class="glass-card readout-card">
+          <h4>U Induction Plane</h4>
+          <p>Angle: +60° | 2400 Wires</p>
+          <div class="wire-canvas-container">
+            <canvas id="canvas-view-u"></canvas>
+          </div>
+        </div>
+        <!-- V-View -->
+        <div class="glass-card readout-card">
+          <h4>V Induction Plane</h4>
+          <p>Angle: -60° | 2400 Wires</p>
+          <div class="wire-canvas-container">
+            <canvas id="canvas-view-v"></canvas>
+          </div>
+        </div>
+        <!-- Y-View -->
+        <div class="glass-card readout-card">
+          <h4>Y Collection Plane</h4>
+          <p>Angle: 0° | 3456 Wires</p>
+          <div class="wire-canvas-container">
+            <canvas id="canvas-view-y"></canvas>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- CNN Results Section -->
+    <section id="results">
+      <h2 class="section-title">CNN Model & Training Results</h2>
+      <p style="color: var(--text-muted); margin-bottom: 2rem; max-width: 1000px;">
+        The raw 800x800 wire plane readouts are processed using a **Smart Vertex Crop** algorithm, reducing them to 3-channel (RGB-like) 512x512 matrices before training. Optuna Bayesian optimization was utilized to discover the best hyperparameters.
+      </p>
+
+      <!-- Key Performance Metrics Grid -->
+      <div class="dashboard-grid">
+        <div class="glass-card metric-card" style="--metric-color: var(--accent-cyan);">
+          <div class="metric-title">Element-wise Accuracy</div>
+          <div class="metric-value">93.67%</div>
+          <div class="metric-desc">Overall correctness across all target labels and classes</div>
+        </div>
+        <div class="glass-card metric-card" style="--metric-color: var(--accent-blue);">
+          <div class="metric-title">Subset Accuracy</div>
+          <div class="metric-value">69.81%</div>
+          <div class="metric-desc">Exact match ratio (all 5 labels classified perfectly for an event)</div>
+        </div>
+        <div class="glass-card metric-card" style="--metric-color: var(--accent-violet);">
+          <div class="metric-title">Micro F1 Score</div>
+          <div class="metric-value">0.9613</div>
+          <div class="metric-desc">Global harmonic mean of precision and recall</div>
+        </div>
+        <div class="glass-card metric-card" style="--metric-color: var(--accent-emerald);">
+          <div class="metric-title">Hamming Loss</div>
+          <div class="metric-value">0.0633</div>
+          <div class="metric-desc">Fraction of misclassified labels (lower is better)</div>
+        </div>
+      </div>
+
+      <!-- Results Details (Hyperparameters and Dataset) -->
+      <div class="results-details">
+        <!-- Dataset Splits -->
+        <div class="glass-card details-card">
+          <h3>Dataset Details</h3>
+          <div class="details-list">
+            <div class="details-item">
+              <span>Total Simulated Events</span>
+              <span class="details-badge">98,237</span>
+            </div>
+            <div class="details-item">
+              <span>Training Split (Train)</span>
+              <span>68,763 events (70%)</span>
+            </div>
+            <div class="details-item">
+              <span>Validation Split (Val)</span>
+              <span>14,738 events (15%)</span>
+            </div>
+            <div class="details-item">
+              <span>Test Split (Test)</span>
+              <span>14,736 events (15%)</span>
+            </div>
+            <div class="details-item">
+              <span>Inference Speed per Sample</span>
+              <span class="details-badge" style="color: var(--accent-cyan);">3.38 ms</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Hyperparameters -->
+        <div class="glass-card details-card">
+          <h3>Best Hyperparameters (Optuna)</h3>
+          <div class="details-list">
+            <div class="details-item">
+              <span>Convolutional Blocks</span>
+              <span class="details-badge">4 Blocks</span>
+            </div>
+            <div class="details-item">
+              <span>Dropout Rate</span>
+              <span class="details-badge">0.40</span>
+            </div>
+            <div class="details-item">
+              <span>Learning Rate</span>
+              <span class="details-badge">0.000194</span>
+            </div>
+            <div class="details-item">
+              <span>Batch Size</span>
+              <span class="details-badge">32</span>
+            </div>
+            <div class="details-item">
+              <span>Optimizer</span>
+              <span class="details-badge" style="color: var(--accent-cyan);">Adam</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Detail Classification Report -->
+      <div class="glass-card" style="padding: 2rem; margin-bottom: 2.5rem;">
+        <h3 style="font-size: 1.4rem; margin-bottom: 1rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.75rem;">Class-wise Performance Report (Classification Report)</h3>
+        <table class="model-details-table">
+          <thead>
+            <tr>
+              <th>Particle Class</th>
+              <th>Precision</th>
+              <th>Recall</th>
+              <th>F1-Score</th>
+              <th>Support (Test Set)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td style="font-weight: 600; color: var(--accent-cyan);">Electron (e-)</td>
+              <td>1.00</td>
+              <td>1.00</td>
+              <td style="font-weight: 600;">1.00</td>
+              <td>14,730</td>
+            </tr>
+            <tr>
+              <td style="font-weight: 600; color: var(--accent-purple);">Photon (γ)</td>
+              <td>0.99</td>
+              <td>0.99</td>
+              <td style="font-weight: 600;">0.99</td>
+              <td>14,549</td>
+            </tr>
+            <tr>
+              <td style="font-weight: 600; color: var(--accent-emerald);">Muon (μ-)</td>
+              <td>0.99</td>
+              <td>0.99</td>
+              <td style="font-weight: 600;">0.99</td>
+              <td>13,970</td>
+            </tr>
+            <tr>
+              <td style="font-weight: 600; color: var(--accent-amber);">Pion (π)</td>
+              <td>0.69</td>
+              <td>0.61</td>
+              <td style="font-weight: 600; color: var(--accent-rose);">0.65</td>
+              <td>5,198</td>
+            </tr>
+            <tr>
+              <td style="font-weight: 600; color: var(--accent-rose);">Proton (p)</td>
+              <td>0.95</td>
+              <td>0.99</td>
+              <td style="font-weight: 600;">0.97</td>
+              <td>11,871</td>
+            </tr>
+            <tr style="border-top: 2px solid var(--border-color); background: rgba(0, 0, 0, 0.01);">
+              <td style="font-weight: bold;">Macro Average</td>
+              <td>0.93</td>
+              <td>0.92</td>
+              <td style="font-weight: bold; color: var(--accent-cyan);">0.92</td>
+              <td>60,318</td>
+            </tr>
+            <tr style="background: rgba(0, 0, 0, 0.02);">
+              <td style="font-weight: bold;">Micro Average</td>
+              <td>0.96</td>
+              <td>0.96</td>
+              <td style="font-weight: bold; color: var(--accent-cyan);">0.96</td>
+              <td>60,318</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Charts & Curves Gallery -->
+      <div class="glass-card charts-gallery">
+        <ul class="chart-tabs-nav">
+          <li><button class="chart-tab-btn active" data-target="tab-curves">Training Curves</button></li>
+          <li><button class="chart-tab-btn" data-target="tab-roc">ROC/AUC Curves</button></li>
+          <li><button class="chart-tab-btn" data-target="tab-matrix">Confusion Matrices</button></li>
+        </ul>
+
+        <!-- Tab Content 1: Training Curves -->
+        <div id="tab-curves" class="chart-tab-content active">
+          <div class="chart-display-card">
+            <div class="chart-image-wrapper">
+              <img src="01_Best_Training_Curves.png" alt="Best Training Curves">
+            </div>
+            <div class="chart-caption">
+              <strong>Figure 1:</strong> Training and validation loss (BCEWithLogitsLoss) and element-wise accuracy curves for the best trial. The optimization displays steady loss decay and rapid accuracy convergence.
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab Content 2: ROC Curves -->
+        <div id="tab-roc" class="chart-tab-content">
+          <div class="chart-display-card">
+            <div class="chart-image-wrapper">
+              <img src="02_Best_ROC_AUC_Curves.png" alt="Best ROC/AUC Curves">
+            </div>
+            <div class="chart-caption">
+              <strong>Figure 2:</strong> Receiver Operating Characteristic (ROC) curves evaluated on the test split. The AUC scores for Electron, Photon, Muon, and Proton classes reach near-perfect levels (>0.99), while the complex Pion class remains the most challenging.
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab Content 3: Confusion Matrices -->
+        <div id="tab-matrix" class="chart-tab-content">
+          <div class="chart-display-card">
+            <div class="chart-image-wrapper">
+              <img src="03_Best_Confusion_Matrices.png" alt="Best Confusion Matrices">
+            </div>
+            <div class="chart-caption">
+              <strong>Figure 3:</strong> Multilabel Confusion Matrices for the 5 target categories on the test dataset, showing true/false positive and negative distributions.
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Literature & References Section -->
+    <section id="literature">
+      <h2 class="section-title">Literature & Source Codes</h2>
+      <p style="color: var(--text-muted); margin-bottom: 2rem; max-width: 1000px;">
+        Scientific references and architectural details of the Geant4 simulation model.
+      </p>
+
+      <div class="literature-grid">
+        <!-- Reference Paper Card -->
+        <div class="glass-card lit-card">
+          <div>
+            <div class="badge" style="margin-bottom: 1rem;">Reference Paper</div>
+            <h3>A Convolutional Neural Network for Multiple Particle Identification in the MicroBooNE Liquid Argon Time Projection Chamber</h3>
+            <div class="lit-author">MicroBooNE Collaboration (P. Abratenko et al.)</div>
+            <p>
+              This publication introduces the first multi-label convolutional neural network (MPID) framework designed to identify particle types (e-, γ, μ-, π, p) from raw 2D wire projection readouts in the MicroBooNE LArTPC detector, demonstrating high reconstruction efficiency on multiple overlapping event structures.
+            </p>
+          </div>
+          <a href="https://arxiv.org/abs/2010.08653" target="_blank" class="btn-secondary">Inspect Paper (arXiv) ↗</a>
+        </div>
+
+        <!-- Geant4 Codebase Details -->
+        <div class="glass-card lit-card">
+          <div>
+            <div class="badge" style="margin-bottom: 1rem; background: rgba(124, 58, 237, 0.06); border-color: rgba(124, 58, 237, 0.15); color: var(--accent-violet);">Simulation Code</div>
+            <h3>Geant4 LArTPC Detector Simulation</h3>
+            <p style="margin-bottom: 0.5rem;">
+              The dataset was compiled using a custom Geant4 C++ detector simulation model. Key architectural classes include:
+            </p>
+            <ul style="color: var(--text-muted); font-size: 0.9rem; margin-left: 1.5rem; margin-bottom: 1.5rem; display: flex; flex-direction: column; gap: 0.25rem;">
+              <li><strong>DetectorConstruction.cc</strong>: Defines the cryostat wall parameters and the $256 \times 233 \times 1037\text{ cm}$ active liquid argon volume.</li>
+              <li><strong>LArSensitiveDetector.cc</strong>: Captures ionization energy deposit hits.</li>
+              <li><strong>WireImageWriter.cc</strong>: Rotates and projects the 3D track positions onto the three wire angles (U: +60°, V: -60°, Y: 0°) to compile 800x800 matrices.</li>
+              <li><strong>PhysicsList.cc</strong>: Configures G4OpticalPhysics and standard electromagnetic/hadron processes.</li>
+            </ul>
+          </div>
+          <a href="./geant4kod1/src/" target="_blank" class="btn-secondary">Open Geant4 Src Directory ↗</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Footer -->
+  <footer>
+    <div class="footer-content">
+      <div>© 2026 LArTPC MPID Dashboard. All Rights Reserved.</div>
+      <div style="font-size: 0.85rem; color: var(--text-muted);">
+        Powered by Geant4 Simulation & CNN Deep Learning
+      </div>
+    </div>
+  </footer>
+
+  <!-- Link Three.js and OrbitControls -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+  <!-- Main JS Logic -->
+  <script src="app.js"></script>
+</body>
+</html>
